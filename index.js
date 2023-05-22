@@ -19,7 +19,9 @@ app.use("/users",userRoutes)
 const quizRoutes = require('./routes/quiz.route');
 app.use('/quizzes', quizRoutes);
 
-
+const robotRoutes = require('./routes/robot.router');
+const categoryRoutes = require('./routes/robot.router');
+app.use('/robot', categoryRoutes);
 
 app.listen(process.env.PORT,()=>{
    console.log(`app listening on port${process.env.PORT}`
