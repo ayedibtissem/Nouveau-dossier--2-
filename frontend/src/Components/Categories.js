@@ -1,188 +1,96 @@
-import React, { useState } from 'react';
-import { styled } from '@mui/material/styles';
-import Grid from '@mui/material/Grid';
+import React, { useState, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import Categories from './Categories';
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import { Link } from 'react-router-dom';
-import Pho from './Photo1';
 
-const CategoryContainer = styled('div')(({ selected, theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: 180,
-  width: 180,
-  borderRadius: 8,
-  border: `2px solid ${theme.palette.grey[500]}`,
-  margin: '0.5rem',
-  background: selected ? theme.palette.primary.main : theme.palette.grey[200],
-  transition: 'background 0.3s ease',
-  cursor: 'pointer',
-  '&:hover': {
-    background: selected ? theme.palette.primary.main : theme.palette.grey[300],
-  },
+function Challenge() {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const category = queryParams.get('category');
+  const level = queryParams.get('level');
 
-}));
+  const [showCategories, setShowCategories] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(category || '');
+  const [selectedLevel, setSelectedLevel] = useState(level || '');
+  const [quizzes, setQuizzes] = useState([]);
 
+  useEffect(() => {
+    setSelectedCategory(category || '');
+    setSelectedLevel(level || '');
+  }, [category, level]);
 
-const CategoryImage = styled('img')({
-  maxWidth: '70%',
-  maxHeight: '70%',
-});
+  useEffect(() => {
+    if (selectedCategory && selectedLevel) {
+      fetchQuizzes();
+    }
+  }, [selectedCategory, selectedLevel]);
 
-const CategoryTitle = styled(Typography)(({ theme }) => ({
-  marginTop: '8px',
-  fontSize: '16px',
-  fontWeight: 'bold',
-  color: theme.palette.text.primary,
-  textTransform: 'uppercase',
-}));
+  async function fetchQuizzes() {
+    try {
+      const response = await fetch(`http://localhost:3005/quiz/a?category=${selectedCategory}&level=${selectedLevel}`);
+      const data = await response.json();
+      setQuizzes(data);
+    } catch (error) {
+      console.error('Error fetching quizzes:', error);
+    }
+  }
 
-const DifficultyContainer = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  marginTop: '10px',
-});
+  function handleCategoryChange(category) {
+    setSelectedCategory(category);
+    setQuizzes([]);
+  }
 
-const DifficultyLabel = styled(Typography)(({ theme }) => ({
-  fontWeight: 'bold',
-  fontSize: '14px',
-  marginBottom: '5px',
-  color: theme.palette.secondary.main,
-}));
-
-const DifficultyButton = styled(Button)(({ selected, theme }) => ({
-  marginLeft: '5px',
-  backgroundColor: selected ? '#FF5722' : '#F5F5F5',
-  color: selected ? 'white' : 'black',
-  transition: 'background 0.3s ease',
-  '&:hover': {
-    backgroundColor: selected ? '#FF5722' : theme.palette.action.hover,
-  },
-}));
-
-const SelectedTitle = styled(Typography)(({ theme }) => ({
-  margin: '20px',
-  fontSize: '24px',
-  fontWeight: 'bold',
-  color: theme.palette.secondary.main,
-  textTransform: 'uppercase',
-}));
-
-function Categories({ onCategoryChange, onLevelChange }) {
-  const tabs = [
-    {
-      title: 'phishing',
-      label: 'Phishing',
-      image: <Pho />,
-      link: '/phishing',
-    },
-    {
-      title: 'email',
-      label: 'Email',
-      image: <Pho />,
-      link: '/email',
-    },
-    {
-      title: 'security',
-      label: 'Security',
-      image: <Pho />,
-      link: '/security',
-    },
-    {
-      title: 'ph',
-      label: 'PH',
-      image: <Pho />,
-      link: '/ph',
-    },
-    {
-      title: 'protection',
-      label: 'Protection',
-      image: <Pho />,
-      link: '/protection',
-    },
-  ];
-
-  const [selectedTitle, setSelectedTitle] = useState('');
-  const [categoryDifficulties, setCategoryDifficulties] = useState({});
-
-  const handleTitleSelect = (title) => {
-    setSelectedTitle(title);
-  };
-
-  const handleDifficultyChange = (category, difficulty) => {
-    setCategoryDifficulties((prevState) => ({
-      ...prevState,
-      [category]: difficulty,
-    }));
-  };
-
-  const handleCategorySelection = () => {
-    onCategoryChange(selectedTitle);
-    onLevelChange(categoryDifficulties[selectedTitle]);
-  };
+  function handleLevelChange(level) {
+    setSelectedLevel(level);
+    setQuizzes([]);
+  }
 
   return (
-    <>
-      <Grid container spacing={2} justifyContent="center">
-        {tabs.map((tab) => (
-          <Grid item key={tab.title}>
-            <CategoryContainer
-              selected={selectedTitle === tab.title}
-              onClick={() => handleTitleSelect(tab.title)}
-            >
-              <Link to={tab.link}>{tab.image}</Link>
-              <CategoryTitle>{tab.label}</CategoryTitle>
-            </CategoryContainer>
-          </Grid>
-        ))}
-      </Grid>
-      {selectedTitle && (
-        <>
-          <SelectedTitle>{selectedTitle}</SelectedTitle>
-          <DifficultyContainer>
-            <DifficultyLabel>Difficulty:</DifficultyLabel>
-            <DifficultyButton
-              selected={categoryDifficulties[selectedTitle] === 'easy'}
-              onClick={() => handleDifficultyChange(selectedTitle, 'easy')}
-            >
-              Easy
-            </DifficultyButton>
-            <DifficultyButton
-              selected={categoryDifficulties[selectedTitle] === 'medium'}
-              onClick={() => handleDifficultyChange(selectedTitle, 'medium')}
-            >
-              Medium
-            </DifficultyButton>
-            <DifficultyButton
-              selected={categoryDifficulties[selectedTitle] === 'hard'}
-              onClick={() => handleDifficultyChange(selectedTitle, 'hard')}
-            >
-              Hard
-            </DifficultyButton>
-          </DifficultyContainer>
-          <Button
-            variant="outlined"
-            sx={{
-              marginTop: '1rem',
-              marginBottom: '2rem',
-              backgroundColor: '#4caf50',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: '#45a049',
-              },
-            }}
-            onClick={handleCategorySelection}
-          >
-            Select Category
-          </Button>
-        </>
+    <div>
+      <h1>Challenge</h1>
+      {selectedCategory && (
+        <p>
+          Selected Category: {selectedCategory}, Level: {selectedLevel}
+        </p>
       )}
-    </>
+      <Button onClick={() => setShowCategories(!showCategories)}>
+        {showCategories ? 'Hide' : 'Show'} Categories
+      </Button>
+      {showCategories && (
+        <Categories
+          onCategoryChange={handleCategoryChange}
+          onLevelChange={handleLevelChange}
+        />
+      )}
+      <Link to={`/quiz?category=${selectedCategory}&level=${selectedLevel}`}>
+        <Button disabled={!selectedCategory || !selectedLevel}>Start Quiz</Button>
+      </Link>
+
+      {quizzes.length > 0 && (
+        <div>
+          <h2>Quizzes</h2>
+          <ul>
+            {quizzes
+              .filter(
+                (quiz) =>
+                  quiz.category === selectedCategory && quiz.level === selectedLevel
+              )
+              .map((question) => (
+                <li key={question.category}>
+                  {question.category} - {question.level}
+                  <p>{question.question}</p>
+                  <ul>
+                    {question.options.map((option, index) => (
+                      <li key={index}>{option}</li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
-export default Categories;
-
+export default Challenge;
