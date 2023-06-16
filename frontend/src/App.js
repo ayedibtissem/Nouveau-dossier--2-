@@ -9,6 +9,10 @@ import Navbar from './pages/Navbar';
 import Challenge from './Components/Challenge';
 import Robot from './Components/robot';
 import SelectedQuiz from './Components/selectedCategory';
+import QuizPage from './Components/selectedCategory';
+import Dashboard from './Components/dashboard';
+import UserManagement from './Components/usermanagement';
+import QuizManager from './Components/quizmanagement';
 
 function App() {
   const router = createBrowserRouter([
@@ -43,8 +47,18 @@ function App() {
     },
     {
       path: '/quiz',
-      element: <SelectedQuiz></SelectedQuiz>,
+      element: <QuizPage></QuizPage>,
     },
+    {
+      path:'/dashboard',
+      element:<Dashboard></Dashboard>
+    }, {
+      path:'/users',
+      element:<UserManagement></UserManagement>
+    },{
+      path:'/quizz',
+      element:<QuizManager></QuizManager>
+    }
   ]);
 
   return (
