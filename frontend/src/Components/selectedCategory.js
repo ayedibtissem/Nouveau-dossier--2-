@@ -101,103 +101,192 @@ function QuizPage() {
       },
     }));
 
-    const score = userAnswer === correctAnswer ? 1 : 0;
-    setTotalScore((prevScore) => prevScore + score);
+    setShowResult(true);
+    setShowQuiz(false);
   };
 
   const handleNextRound = () => {
-    setRound((prevRound) => prevRound + 1);
-    setRoundAnswers({});
-    setShowQuiz(true);
-    setShowResult(false);
+    if (round === maxRounds) {
+      handleFinishQuiz();
+    } else {
+      setRound((prevRound) => prevRound + 1);
+      setShowQuiz(true);
+      setShowResult(false);
+      setUserAnswers({});
+      setRobotAnswers({});
+
+      if (!roundAnswers[round]) {
+        const roundQuestions = quizzes.filter(
+          (quiz) => quiz.category === selectedCategory && quiz.level === selectedLevel
+        );
+
+        const roundResults = roundQuestions.reduce((acc, question) => {
+          acc[question.id] = false;
+          return acc;
+        }, {});
+
+        setResults((prevResults) => ({
+          ...prevResults,
+          ...roundResults,
+        }));
+
+        setRobotAnswers((prevRobotAnswers) => ({
+          ...prevRobotAnswers,
+          ...roundResults,
+        }));
+      }
+
+      setRoundAnswers((prevAnswers) => ({
+        ...prevAnswers,
+        [round]: false,
+      }));
+    }
   };
 
-  useEffect(() => {
-    if (round > maxRounds) {
-      if (userRoundWins > robotRoundWins) {
-        setWinner('user');
-      } else if (userRoundWins < robotRoundWins) {
-        setWinner('robot');
-      } else {
-        setWinner('tie');
-      }
-      setShowQuiz(false);
-      setShowResult(true);
-    }
-  }, [round, userRoundWins, robotRoundWins]);
+  const handleFinishQuiz = () => {
+    setShowQuiz(false);
+    setShowResult(false);
 
-  const handleRoundResult = () => {
-    const roundScore = Object.values(results).reduce((total, result) => total + (result ? 1 : 0), 0);
-    const robotRoundScore = Object.values(robotAnswers).reduce(
-      (total, answer) => total + (answer.result ? 1 : 0),
-      0
-    );
+    const userScore = Object.values(results).reduce((acc, result) => {
+      return result ? acc + 1 : acc;
+    }, 0);
 
-    if (roundScore > robotRoundScore) {
+    const robotScore = Object.values(robotAnswers).reduce((acc, answer) => {
+      return answer.result ? acc + 1 : acc;
+    }, 0);
+
+    setTotalScore(userScore);
+
+    if (userScore > robotScore) {
+      setWinner('user');
       setUserRoundWins((prevWins) => prevWins + 1);
-    } else if (roundScore < robotRoundScore) {
+    } else if (robotScore > userScore) {
+      setWinner('robot');
       setRobotRoundWins((prevWins) => prevWins + 1);
+    } else {
+      setWinner('tie');
     }
   };
 
   return (
-    <div>
+    <div className="quiz-page">
+      <h1>Quiz Page</h1>
+      <div className="quiz-controls">
+        <div className="category-selector">
+          <label htmlFor="category">Category:</label>
+          <select
+            id="category"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            {/* Category options */}
+          </select>
+        </div>
+        <div className="level-selector">
+          <label htmlFor="level">Level:</label>
+          <select
+            id="level"
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
+            <option value="">Select level</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="difficult">Difficult</option>
+          </select>
+        </div>
+        <Button
+          variant="contained"
+          color="primary"
+          disabled={!selectedCategory || !selectedLevel}
+          onClick={fetchQuizzes}
+        >
+          Start Quiz
+        </Button>
+      </div>
+
       {showQuiz && (
-        <div>
+        <div className="quiz-container">
           <h2>Round {round}</h2>
-          <h3>Category: {selectedCategory}</h3>
-          <h3>Level: {selectedLevel}</h3>
-          {quizzes.map((quiz) => (
-            <div key={quiz.id}>
-              <h4>{quiz.question}</h4>
-              {quiz.options.map((option, index) => (
-                <div key={index}>
-                  <input
-                    type="radio"
-                    id={index}
-                    name={quiz.id}
-                    value={index}
-                    checked={userAnswers[quiz.id] === index}
-                    onChange={() => handleOptionChange(quiz.id, index)}
-                  />
-                  <label htmlFor={index}>{option}</label>
-                </div>
-              ))}
-              <Button variant="contained" onClick={() => handleSubmit(quiz.id)}>Submit</Button>
-            </div>
-          ))}
-          <Button variant="contained" onClick={handleNextRound}>Next Round</Button>
+          {quizzes
+            .filter((quiz) => quiz.category === selectedCategory && quiz.level === selectedLevel)
+            .map((quiz) => (
+              <div className="question" key={quiz.id}>
+                <h3>{quiz.question}</h3>
+                {quiz.options.map((option, index) => (
+                  <div className="option" key={index}>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`question-${quiz.id}`}
+                        checked={userAnswers[quiz.id] === index}
+                        onChange={() => handleOptionChange(quiz.id, index)}
+                      />
+                      {option}
+                    </label>
+                  </div>
+                ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={typeof userAnswers[quiz.id] === 'undefined'}
+                  onClick={() => handleSubmit(quiz.id)}
+                >
+                  Submit
+                </Button>
+              </div>
+            ))}
         </div>
       )}
+
       {showResult && (
-        <div>
-          <h2>Results</h2>
-          {quizzes.map((quiz) => (
-            <div key={quiz.id}>
-              <h4>{quiz.question}</h4>
-              <p>Your Answer: {quiz.options[userAnswers[quiz.id]]}</p>
-              <p>
-                Robot Answer: {robotAnswers[quiz.id].answer}{' '}
-                {robotAnswers[quiz.id].result ? '(Correct)' : '(Incorrect)'}
-              </p>
-              <p>
-                Result:{' '}
-                {results[quiz.id] ? (
-                  <span style={{ color: 'green' }}>Correct</span>
-                ) : (
-                  <span style={{ color: 'red' }}>Incorrect</span>
-                )}
-              </p>
-            </div>
-          ))}
-          <h3>Total Score: {totalScore}</h3>
-          <h3>Winner: {winner}</h3>
+        <div className="result-container">
+          <h2>Round {round} Result</h2>
+          {quizzes
+            .filter((quiz) => quiz.category === selectedCategory && quiz.level === selectedLevel)
+            .map((quiz) => (
+              <div className="question-result" key={quiz.id}>
+                <h3>{quiz.question}</h3>
+                <div className="result">
+                  <div className="user">
+                    <img src={userImage} alt="User" />
+                    {results[quiz.id] ? (
+                      <span className="correct">Correct</span>
+                    ) : (
+                      <span className="incorrect">Incorrect</span>
+                    )}
+                  </div>
+                  <div className="robot">
+                    <img src={robotImage} alt="Robot" width={120} />
+                    {robotAnswers[quiz.id].result ? (
+                      <span className="correct">Correct</span>
+                    ) : (
+                      <span className="incorrect">Incorrect</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          <Button variant="contained" color="primary" onClick={handleNextRound}>
+            Next Round
+          </Button>
         </div>
       )}
-      <Link to="/">Back to Home</Link>
-      <img src={userImage} alt="User" />
-      <img src={robotImage} alt="Robot" />
-      <Button variant="contained" onClick={handleRoundResult}>Get Round Result</Button>
+
+      {!showQuiz && !showResult && (
+        <div className="final-result">
+          <h2>Quiz Finished!</h2>
+          <h3>Total Score: {totalScore}</h3>
+          <h3>Winner: {winner === 'user' ? 'User' : winner === 'robot' ? 'Robot' : 'Tie'}</h3>
+          {round === maxRounds && (
+            <div>
+              <h3>User Round Wins: {userRoundWins}</h3>
+              <h3>Robot Round Wins: {robotRoundWins}</h3>
+            </div>
+          )}
+        
+        </div>
+      )}
     </div>
   );
 }
